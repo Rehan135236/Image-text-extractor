@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>📸 Text Extractor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 15px;
+            color: #2c3e50;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 25px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 35px 20px;
+            text-align: center;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .upload-area:hover::before {
+            opacity: 1;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+        }
+
+        .upload-icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-info {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #2e7d32;
+            display: none;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .text-output {
+            background: #fafafa;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            transition: all 0.3s;
+        }
+
+        .text-output:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .text-output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .text-output::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .text-output::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+
+        .text-output::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            background: #34495e;
+            color: #ecf0f1;
+            font-size: 14px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .separator {
+            border-top: 2px solid #667eea;
+            margin: 20px 0;
+            padding-top: 10px;
+        }
+
+        .progress-bar {
+            display: none;
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .image-count {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .success-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #2ecc71;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1000;
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                border-radius: 0;
+            }
+            
+            body {
+                padding: 0;
+            }
+            
+            .buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            button {
+                font-size: 14px;
+                padding: 12px 20px;
+            }
+
+            .upload-area {
+                padding: 25px 15px;
+            }
+
+            .text-output {
+                max-height: 400px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📸 Text Extractor</h1>
+            <p>Extract text from images instantly</p>
+        </div>
+
+        <div class="content">
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">📁</div>
+                <h3>Click or Drop Images Here</h3>
+                <p style="margin-top: 10px; opacity: 0.7;">Supports multiple images (JPG, PNG, etc.)</p>
+            </div>
+
+            <input type="file" id="fileInput" accept="image/*" multiple>
+
+            <div class="file-info" id="fileInfo"></div>
+
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Extracting text...</p>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-primary" onclick="extractText()" id="extractBtn" disabled>📸 Extract Text</button>
+                <button class="btn-success" onclick="copyText()" id="copyBtn">📋 Copy</button>
+                <button class="btn-warning" onclick="saveText()" id="saveBtn">💾 Save</button>
+                <button class="btn-secondary" onclick="clearAll()" id="clearBtn">🗑️ Clear</button>
+            </div>
+
+            <div class="text-output" id="textOutput">
+                <span style="color: #95a5a6;">Extracted text will appear here...</span>
+            </div>
+        </div>
+
+        <div class="status" id="status">Ready to extract text</div>
+    </div>
+
+    <div class="success-toast" id="successToast"></div>
+
+    <script>
+        let selectedFiles = [];
+        let extractedCount = 0;
+
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInfo = document.getElementById('fileInfo');
+        const textOutput = document.getElementById('textOutput');
+        const status = document.getElementById('status');
+        const loading = document.getElementById('loading');
+        const extractBtn = document.getElementById('extractBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const successToast = document.getElementById('successToast');
+
+        // Show toast notification
+        function showToast(message) {
+            successToast.textContent = message;
+            successToast.style.display = 'block';
+            setTimeout(() => {
+                successToast.style.display = 'none';
+            }, 3000);
+        }
+
+        // File selection
+        fileInput.addEventListener('change', function(e) {
+            selectedFiles = Array.from(e.target.files);
+            if (selectedFiles.length > 0) {
+                fileInfo.style.display = 'block';
+                fileInfo.innerHTML = `✅ Selected <span class="image-count">${selectedFiles.length} image(s)</span>`;
+                extractBtn.disabled = false;
+                status.textContent = `${selectedFiles.length} image(s) selected`;
+                showToast(`${selectedFiles.length} image(s) selected!`);
+            }
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', function() {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            if (files.length > 0) {
+                selectedFiles = files;
+                fileInfo.style.display = 'block';
+                fileInfo.innerHTML = `✅ Selected <span class="image-count">${files.length} image(s)</span>`;
+                extractBtn.disabled = false;
+                status.textContent = `${files.length} image(s) selected`;
+                showToast(`${files.length} image(s) dropped!`);
+            }
+        });
+
+        // Extract text
+        async function extractText() {
+            if (selectedFiles.length === 0) {
+                alert('Please select images first!');
+                return;
+            }
+
+            loading.style.display = 'block';
+            progressBar.style.display = 'block';
+            progressFill.style.width = '0%';
+            extractBtn.disabled = true;
+            status.textContent = 'Extracting text...';
+            textOutput.innerHTML = '<span style="color: #95a5a6;">Processing images...</span>';
+
+            const formData = new FormData();
+            selectedFiles.forEach(file => {
+                formData.append('images', file);
+            });
+
+            try {
+                // Simulate progress
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 10;
+                    if (progress <= 90) {
+                        progressFill.style.width = progress + '%';
+                    }
+                }, 200);
+
+                const response = await fetch('/extract', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+
+                const data = await response.json();
+
+                if (data.success) {
+                    let outputText = '';
+                    extractedCount = data.results.length;
+                    
+                    data.results.forEach(result => {
+                        outputText += `${'='.repeat(60)}\n`;
+                        outputText += `IMAGE ${result.index}: ${result.filename}\n`;
+                        outputText += `${'='.repeat(60)}\n`;
+                        outputText += result.text + '\n\n';
+                    });
+
+                    textOutput.textContent = outputText;
+                    status.textContent = `✅ Successfully extracted text from ${data.results.length} image(s)!`;
+                    showToast(`✅ Extracted text from ${data.results.length} image(s)!`);
+                } else {
+                    alert('Error: ' + data.error);
+                    status.textContent = 'Error occurred';
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+                status.textContent = 'Error occurred';
+            } finally {
+                loading.style.display = 'none';
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                    progressFill.style.width = '0%';
+                }, 500);
+                extractBtn.disabled = false;
+            }
+        }
+
+        // Copy text
+        function copyText() {
+            const text = textOutput.textContent;
+            if (text && text !== 'Extracted text will appear here...' && text !== 'Processing images...') {
+                navigator.clipboard.writeText(text).then(() => {
+                    status.textContent = '✅ Text copied to clipboard!';
+                    showToast('✅ Text copied! Ready to paste.');
+                    setTimeout(() => {
+                        status.textContent = 'Ready';
+                    }, 2000);
+                });
+            } else {
+                showToast('❌ No text to copy!');
+            }
+        }
+
+        // Save text
+        function saveText() {
+            const text = textOutput.textContent;
+            if (text && text !== 'Extracted text will appear here...' && text !== 'Processing images...') {
+                const timestamp = new Date().toISOString().slice(0,19).replace(/:/g,'-');
+                const blob = new Blob([text], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `extracted_text_${timestamp}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+                status.textContent = '✅ File saved!';
+                showToast('✅ File downloaded successfully!');
+            } else {
+                showToast('❌ No text to save!');
+            }
+        }
+
+        // Clear all
+        function clearAll() {
+            selectedFiles = [];
+            fileInput.value = '';
+            fileInfo.style.display = 'none';
+            textOutput.innerHTML = '<span style="color: #95a5a6;">Extracted text will appear here...</span>';
+            extractBtn.disabled = true;
+            extractedCount = 0;
+            status.textContent = 'Cleared';
+            showToast('🗑️ Cleared successfully!');
+            progressBar.style.display = 'none';
+            progressFill.style.width = '0%';
+        }
+    </script>
+</body>
+</html>

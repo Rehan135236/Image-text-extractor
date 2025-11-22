@@ -43,7 +43,7 @@ A powerful cross-platform OCR (Optical Character Recognition) application that e
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Rehan135236/image-text-extractor.git
+git clone https://github.com/YOUR_USERNAME/image-text-extractor.git
 cd image-text-extractor
 ```
 
@@ -106,6 +106,7 @@ Build using Google Colab:
 4. Click **"📸 Extract Text"**
 5. Copy or download the extracted text
 
+## 📸 Screenshots
 
 ### Desktop Application
 - Modern Windows desktop interface
@@ -182,4 +183,3 @@ For questions or support, please open an issue on GitHub.
 ---
 
 **Made with ❤️ using Python**
-
